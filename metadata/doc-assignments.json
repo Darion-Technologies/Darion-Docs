@@ -1,0 +1,34 @@
+{
+  "assignments": [
+    {
+      "id": "engineering-handbook-viewers",
+      "scope": "internal",
+      "slug": "engineering-handbook",
+      "project": "company-systems",
+      "targetType": "role",
+      "target": "viewer",
+      "accessLevel": "read",
+      "assignedBy": "admin"
+    },
+    {
+      "id": "m1-planning-editors",
+      "scope": "internal",
+      "slug": "m1-20planning",
+      "project": "darion-bpo-platform",
+      "targetType": "role",
+      "target": "editor",
+      "accessLevel": "edit",
+      "assignedBy": "admin"
+    },
+    {
+      "id": "m1-planning-admins",
+      "scope": "internal",
+      "slug": "m1-20planning",
+      "project": "darion-bpo-platform",
+      "targetType": "role",
+      "target": "admin",
+      "accessLevel": "owner",
+      "assignedBy": "admin"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "roles": [
+    {
+      "id": "admin",
+      "name": "Admin",
+      "permissions": [
+        "admin:*",
+        "documents:*",
+        "internal:*",
+        "users:*",
+        "settings:*",
+        "publish:*"
+      ]
+    },
+    {
+      "id": "editor",
+      "name": "Editor",
+      "permissions": [
+        "documents:read",
+        "documents:write",
+        "internal:read",
+        "internal:write"
+      ]
+    },
+    {
+      "id": "viewer",
+      "name": "Viewer",
+      "permissions": [
+        "internal:read"
+      ]
+    }
+  ]
+}

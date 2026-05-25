@@ -1,0 +1,18 @@
+{
+  "projects": [
+    {
+      "id": "darion-bpo-platform",
+      "name": "Darion BPO Platform",
+      "description": "Execution, setup, handling, and troubleshooting documentation for the Darion BPO Platform.",
+      "status": "active",
+      "owner": "admin"
+    },
+    {
+      "id": "company-systems",
+      "name": "Company Systems",
+      "description": "Shared internal operating references for Darion engineering teams.",
+      "status": "active",
+      "owner": "admin"
+    }
+  ]
+}

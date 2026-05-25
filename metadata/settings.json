@@ -1,0 +1,8 @@
+{
+  "siteTitle": "Darion Docs",
+  "publicDocsPath": "docs",
+  "internalDocsPath": "internal",
+  "adminRoute": "/__admin",
+  "internalRoute": "/__internal",
+  "buildCommand": "npm run docs:build"
+}

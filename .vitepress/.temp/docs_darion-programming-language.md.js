@@ -1,0 +1,296 @@
+import { ssrRenderAttrs } from "vue/server-renderer";
+import { useSSRContext } from "vue";
+import { _ as _export_sfc } from "./plugin-vue_export-helper.1tPrXgE0.js";
+const __pageData = JSON.parse('{"title":"Darion Programming Language","description":"","frontmatter":{"title":"Darion Programming Language","group":"Programming","order":20,"status":"published","owner":"docs","tags":"","visibility":"public"},"headers":[],"relativePath":"docs/darion-programming-language.md","filePath":"docs/darion-programming-language.md","lastUpdated":null}');
+const _sfc_main = { name: "docs/darion-programming-language.md" };
+function _sfc_ssrRender(_ctx, _push, _parent, _attrs, $props, $setup, $data, $options) {
+  _push(`<div${ssrRenderAttrs(_attrs)}><h1 id="darion-programming-language" tabindex="-1">Darion Programming Language <a class="header-anchor" href="#darion-programming-language" aria-label="Permalink to &quot;Darion Programming Language&quot;">​</a></h1><p>Darion Programming Language is a modern programming language concept designed by Darion Technologies to make software development faster, cleaner, and more intelligent.</p><p>The main goal of Darion is to help developers build production-ready applications with simple syntax, strong structure, AI support, backend integration, database support, and deployment-ready workflows.</p><p>Darion is not just a programming language. It is planned as a complete development foundation for building real software, automation systems, business platforms, AI tools, internal dashboards, and enterprise applications.</p><h2 id="vision" tabindex="-1">Vision <a class="header-anchor" href="#vision" aria-label="Permalink to &quot;Vision&quot;">​</a></h2><p>Darion Programming Language is created with one clear vision:</p><blockquote><p>To make software development simple enough for beginners, powerful enough for professionals, and intelligent enough for the future.</p></blockquote><p>Darion should help a developer go from idea to production with less complexity, fewer repeated steps, and cleaner project structure.</p><h2 id="core-purpose" tabindex="-1">Core Purpose <a class="header-anchor" href="#core-purpose" aria-label="Permalink to &quot;Core Purpose&quot;">​</a></h2><p>Darion is designed to solve common problems in software development:</p><ul><li>Complex syntax for beginners</li><li>Too much boilerplate code</li><li>Difficult backend setup</li><li>Confusing database integration</li><li>Repeated authentication and API patterns</li><li>Hard deployment process</li><li>Poor connection between AI and real application development</li><li>Slow project setup for business software</li></ul><p>Darion aims to reduce these problems by providing a simple, readable, and powerful development experience.</p><h2 id="language-philosophy" tabindex="-1">Language Philosophy <a class="header-anchor" href="#language-philosophy" aria-label="Permalink to &quot;Language Philosophy&quot;">​</a></h2><p>Darion follows five main principles:</p><ol><li><p>Simple syntax<br> Code should be easy to read and understand.</p></li><li><p>Production-first design<br> The language should help build real applications, not only small scripts.</p></li><li><p>AI-native development<br> AI should understand, generate, explain, and improve Darion code easily.</p></li><li><p>Full-stack support<br> Backend, frontend, database, APIs, authentication, and deployment should work together.</p></li><li><p>Enterprise structure<br> Projects should be clean, scalable, secure, and maintainable from the beginning.</p></li></ol><h2 id="example-syntax" tabindex="-1">Example Syntax <a class="header-anchor" href="#example-syntax" aria-label="Permalink to &quot;Example Syntax&quot;">​</a></h2><h3 id="hello-world" tabindex="-1">Hello World <a class="header-anchor" href="#hello-world" aria-label="Permalink to &quot;Hello World&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>print &quot;Hello, Darion&quot;</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br></div></div><h3 id="variables" tabindex="-1">Variables <a class="header-anchor" href="#variables" aria-label="Permalink to &quot;Variables&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>name = &quot;Darion Technologies&quot;</span></span>
+<span class="line"><span>year = 2026</span></span>
+<span class="line"><span>active = true</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>print name</span></span>
+<span class="line"><span>print year</span></span>
+<span class="line"><span>print active</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br></div></div><h3 id="conditions" tabindex="-1">Conditions <a class="header-anchor" href="#conditions" aria-label="Permalink to &quot;Conditions&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>userRole = &quot;admin&quot;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>if userRole == &quot;admin&quot; {</span></span>
+<span class="line"><span>    print &quot;Access granted&quot;</span></span>
+<span class="line"><span>} else {</span></span>
+<span class="line"><span>    print &quot;Access denied&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br></div></div><h3 id="loops" tabindex="-1">Loops <a class="header-anchor" href="#loops" aria-label="Permalink to &quot;Loops&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>for number in 1..5 {</span></span>
+<span class="line"><span>    print number</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br></div></div><h3 id="functions" tabindex="-1">Functions <a class="header-anchor" href="#functions" aria-label="Permalink to &quot;Functions&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>function greet(name) {</span></span>
+<span class="line"><span>    return &quot;Hello, &quot; + name</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>message = greet(&quot;Pavan&quot;)</span></span>
+<span class="line"><span>print message</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br></div></div><h3 id="objects" tabindex="-1">Objects <a class="header-anchor" href="#objects" aria-label="Permalink to &quot;Objects&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>user = {</span></span>
+<span class="line"><span>    name: &quot;Harsha&quot;,</span></span>
+<span class="line"><span>    role: &quot;Backend Developer&quot;,</span></span>
+<span class="line"><span>    status: &quot;Active&quot;</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>print user.name</span></span>
+<span class="line"><span>print user.role</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br></div></div><h2 id="backend-example" tabindex="-1">Backend Example <a class="header-anchor" href="#backend-example" aria-label="Permalink to &quot;Backend Example&quot;">​</a></h2><p>Darion should make backend development simple and readable.</p><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>server app {</span></span>
+<span class="line"><span>    port 8080</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route GET &quot;/&quot; {</span></span>
+<span class="line"><span>    return {</span></span>
+<span class="line"><span>        message: &quot;Darion API is running&quot;</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route GET &quot;/users&quot; {</span></span>
+<span class="line"><span>    users = database.users.findAll()</span></span>
+<span class="line"><span>    return users</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br></div></div><h2 id="api-example" tabindex="-1">API Example <a class="header-anchor" href="#api-example" aria-label="Permalink to &quot;API Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>route POST &quot;/login&quot; {</span></span>
+<span class="line"><span>    email = request.body.email</span></span>
+<span class="line"><span>    password = request.body.password</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    user = database.users.findOne({</span></span>
+<span class="line"><span>        email: email</span></span>
+<span class="line"><span>    })</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    if user == null {</span></span>
+<span class="line"><span>        return error &quot;User not found&quot;</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    if verifyPassword(password, user.password) {</span></span>
+<span class="line"><span>        token = auth.createToken(user)</span></span>
+<span class="line"><span>        return {</span></span>
+<span class="line"><span>            message: &quot;Login successful&quot;,</span></span>
+<span class="line"><span>            token: token</span></span>
+<span class="line"><span>        }</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return error &quot;Invalid password&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br><span class="line-number">15</span><br><span class="line-number">16</span><br><span class="line-number">17</span><br><span class="line-number">18</span><br><span class="line-number">19</span><br><span class="line-number">20</span><br><span class="line-number">21</span><br><span class="line-number">22</span><br></div></div><h2 id="database-example" tabindex="-1">Database Example <a class="header-anchor" href="#database-example" aria-label="Permalink to &quot;Database Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>model User {</span></span>
+<span class="line"><span>    id: number primary</span></span>
+<span class="line"><span>    name: text</span></span>
+<span class="line"><span>    email: text unique</span></span>
+<span class="line"><span>    password: text</span></span>
+<span class="line"><span>    role: text</span></span>
+<span class="line"><span>    createdAt: datetime</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br></div></div><h3 id="insert-data" tabindex="-1">Insert Data <a class="header-anchor" href="#insert-data" aria-label="Permalink to &quot;Insert Data&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>database.users.create({</span></span>
+<span class="line"><span>    name: &quot;Aishu&quot;,</span></span>
+<span class="line"><span>    email: &quot;aishu@example.com&quot;,</span></span>
+<span class="line"><span>    password: hash(&quot;123456&quot;),</span></span>
+<span class="line"><span>    role: &quot;QA Trainee&quot;</span></span>
+<span class="line"><span>})</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br></div></div><h3 id="read-data" tabindex="-1">Read Data <a class="header-anchor" href="#read-data" aria-label="Permalink to &quot;Read Data&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>users = database.users.findAll()</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>for user in users {</span></span>
+<span class="line"><span>    print user.name</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br></div></div><h2 id="authentication-example" tabindex="-1">Authentication Example <a class="header-anchor" href="#authentication-example" aria-label="Permalink to &quot;Authentication Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>auth enable {</span></span>
+<span class="line"><span>    provider: &quot;jwt&quot;</span></span>
+<span class="line"><span>    userModel: User</span></span>
+<span class="line"><span>    loginField: &quot;email&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br></div></div><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>protected route GET &quot;/profile&quot; {</span></span>
+<span class="line"><span>    user = auth.currentUser()</span></span>
+<span class="line"><span>    return user</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br></div></div><h2 id="frontend-component-example" tabindex="-1">Frontend Component Example <a class="header-anchor" href="#frontend-component-example" aria-label="Permalink to &quot;Frontend Component Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>component Button {</span></span>
+<span class="line"><span>    props {</span></span>
+<span class="line"><span>        title: text</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    render {</span></span>
+<span class="line"><span>        button {</span></span>
+<span class="line"><span>            text title</span></span>
+<span class="line"><span>            class &quot;primary-button&quot;</span></span>
+<span class="line"><span>        }</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br></div></div><h2 id="full-page-example" tabindex="-1">Full Page Example <a class="header-anchor" href="#full-page-example" aria-label="Permalink to &quot;Full Page Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>page Dashboard {</span></span>
+<span class="line"><span>    title &quot;Admin Dashboard&quot;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    data {</span></span>
+<span class="line"><span>        employees = database.employees.findAll()</span></span>
+<span class="line"><span>        tasks = database.tasks.findAll()</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    render {</span></span>
+<span class="line"><span>        section {</span></span>
+<span class="line"><span>            h1 &quot;Dashboard&quot;</span></span>
+<span class="line"><span>            p &quot;Welcome to Darion Admin Panel&quot;</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>            card {</span></span>
+<span class="line"><span>                h2 &quot;Total Employees&quot;</span></span>
+<span class="line"><span>                text count(employees)</span></span>
+<span class="line"><span>            }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>            card {</span></span>
+<span class="line"><span>                h2 &quot;Total Tasks&quot;</span></span>
+<span class="line"><span>                text count(tasks)</span></span>
+<span class="line"><span>            }</span></span>
+<span class="line"><span>        }</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br><span class="line-number">15</span><br><span class="line-number">16</span><br><span class="line-number">17</span><br><span class="line-number">18</span><br><span class="line-number">19</span><br><span class="line-number">20</span><br><span class="line-number">21</span><br><span class="line-number">22</span><br><span class="line-number">23</span><br><span class="line-number">24</span><br><span class="line-number">25</span><br></div></div><h2 id="ai-native-example" tabindex="-1">AI-native Example <a class="header-anchor" href="#ai-native-example" aria-label="Permalink to &quot;AI-native Example&quot;">​</a></h2><p>Darion can be designed to work deeply with AI tools.</p><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ai explain function calculateSalary</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>function calculateSalary(baseSalary, bonus) {</span></span>
+<span class="line"><span>    total = baseSalary + bonus</span></span>
+<span class="line"><span>    return total</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br></div></div><p>Expected AI output:</p><div class="language-text vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>This function takes base salary and bonus, adds them together, and returns the final salary.</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br></div></div><h3 id="ai-code-fix-example" tabindex="-1">AI Code Fix Example <a class="header-anchor" href="#ai-code-fix-example" aria-label="Permalink to &quot;AI Code Fix Example&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ai fix errors in currentFile</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br></div></div><h3 id="ai-generate-api-example" tabindex="-1">AI Generate API Example <a class="header-anchor" href="#ai-generate-api-example" aria-label="Permalink to &quot;AI Generate API Example&quot;">​</a></h3><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>ai generate route {</span></span>
+<span class="line"><span>    method: &quot;POST&quot;</span></span>
+<span class="line"><span>    path: &quot;/employees&quot;</span></span>
+<span class="line"><span>    purpose: &quot;Create a new employee with name, email, role, and salary&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br></div></div><h2 id="project-structure" tabindex="-1">Project Structure <a class="header-anchor" href="#project-structure" aria-label="Permalink to &quot;Project Structure&quot;">​</a></h2><p>A Darion project may follow this structure:</p><div class="language-text vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">text</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>darion-project/</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>├── app.darion</span></span>
+<span class="line"><span>├── routes/</span></span>
+<span class="line"><span>│   ├── auth.darion</span></span>
+<span class="line"><span>│   ├── users.darion</span></span>
+<span class="line"><span>│   └── dashboard.darion</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>├── models/</span></span>
+<span class="line"><span>│   ├── user.darion</span></span>
+<span class="line"><span>│   ├── employee.darion</span></span>
+<span class="line"><span>│   └── task.darion</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>├── pages/</span></span>
+<span class="line"><span>│   ├── home.darion</span></span>
+<span class="line"><span>│   ├── login.darion</span></span>
+<span class="line"><span>│   └── dashboard.darion</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>├── services/</span></span>
+<span class="line"><span>│   ├── email.darion</span></span>
+<span class="line"><span>│   └── payment.darion</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>├── config/</span></span>
+<span class="line"><span>│   ├── database.darion</span></span>
+<span class="line"><span>│   └── auth.darion</span></span>
+<span class="line"><span>│</span></span>
+<span class="line"><span>└── deploy.darion</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br><span class="line-number">15</span><br><span class="line-number">16</span><br><span class="line-number">17</span><br><span class="line-number">18</span><br><span class="line-number">19</span><br><span class="line-number">20</span><br><span class="line-number">21</span><br><span class="line-number">22</span><br><span class="line-number">23</span><br><span class="line-number">24</span><br><span class="line-number">25</span><br><span class="line-number">26</span><br><span class="line-number">27</span><br></div></div><h2 id="configuration-example" tabindex="-1">Configuration Example <a class="header-anchor" href="#configuration-example" aria-label="Permalink to &quot;Configuration Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>project {</span></span>
+<span class="line"><span>    name: &quot;Darion BPO Platform&quot;</span></span>
+<span class="line"><span>    version: &quot;1.0.0&quot;</span></span>
+<span class="line"><span>    environment: &quot;production&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br></div></div><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>database {</span></span>
+<span class="line"><span>    provider: &quot;postgresql&quot;</span></span>
+<span class="line"><span>    host: env.DB_HOST</span></span>
+<span class="line"><span>    username: env.DB_USER</span></span>
+<span class="line"><span>    password: env.DB_PASSWORD</span></span>
+<span class="line"><span>    name: env.DB_NAME</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br></div></div><h2 id="deployment-example" tabindex="-1">Deployment Example <a class="header-anchor" href="#deployment-example" aria-label="Permalink to &quot;Deployment Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>deploy {</span></span>
+<span class="line"><span>    provider: &quot;docker&quot;</span></span>
+<span class="line"><span>    region: &quot;india-south&quot;</span></span>
+<span class="line"><span>    build: true</span></span>
+<span class="line"><span>    migrateDatabase: true</span></span>
+<span class="line"><span>    startCommand: &quot;darion start&quot;</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br></div></div><h2 id="error-handling" tabindex="-1">Error Handling <a class="header-anchor" href="#error-handling" aria-label="Permalink to &quot;Error Handling&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>try {</span></span>
+<span class="line"><span>    user = database.users.findOne({</span></span>
+<span class="line"><span>        email: request.body.email</span></span>
+<span class="line"><span>    })</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return user</span></span>
+<span class="line"><span>} catch error {</span></span>
+<span class="line"><span>    return {</span></span>
+<span class="line"><span>        message: &quot;Something went wrong&quot;,</span></span>
+<span class="line"><span>        details: error.message</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br></div></div><h2 id="business-logic-example" tabindex="-1">Business Logic Example <a class="header-anchor" href="#business-logic-example" aria-label="Permalink to &quot;Business Logic Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>function calculateEmployeeSalary(basic, hra, bonus, deductions) {</span></span>
+<span class="line"><span>    grossSalary = basic + hra + bonus</span></span>
+<span class="line"><span>    netSalary = grossSalary - deductions</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return netSalary</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br></div></div><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>salary = calculateEmployeeSalary(20000, 5000, 3000, 2000)</span></span>
+<span class="line"><span>print salary</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br></div></div><h2 id="bpo-platform-example" tabindex="-1">BPO Platform Example <a class="header-anchor" href="#bpo-platform-example" aria-label="Permalink to &quot;BPO Platform Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>model Candidate {</span></span>
+<span class="line"><span>    id: number primary</span></span>
+<span class="line"><span>    name: text</span></span>
+<span class="line"><span>    phone: text</span></span>
+<span class="line"><span>    email: text</span></span>
+<span class="line"><span>    status: text</span></span>
+<span class="line"><span>    assignedTo: text</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br></div></div><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>route POST &quot;/candidates&quot; {</span></span>
+<span class="line"><span>    candidate = database.candidates.create({</span></span>
+<span class="line"><span>        name: request.body.name,</span></span>
+<span class="line"><span>        phone: request.body.phone,</span></span>
+<span class="line"><span>        email: request.body.email,</span></span>
+<span class="line"><span>        status: &quot;New&quot;,</span></span>
+<span class="line"><span>        assignedTo: auth.currentUser().name</span></span>
+<span class="line"><span>    })</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return {</span></span>
+<span class="line"><span>        message: &quot;Candidate created successfully&quot;,</span></span>
+<span class="line"><span>        candidate: candidate</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br></div></div><h2 id="task-management-example" tabindex="-1">Task Management Example <a class="header-anchor" href="#task-management-example" aria-label="Permalink to &quot;Task Management Example&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>model Task {</span></span>
+<span class="line"><span>    id: number primary</span></span>
+<span class="line"><span>    title: text</span></span>
+<span class="line"><span>    description: text</span></span>
+<span class="line"><span>    assignedTo: text</span></span>
+<span class="line"><span>    status: text</span></span>
+<span class="line"><span>    priority: text</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br></div></div><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>route POST &quot;/tasks&quot; {</span></span>
+<span class="line"><span>    task = database.tasks.create({</span></span>
+<span class="line"><span>        title: request.body.title,</span></span>
+<span class="line"><span>        description: request.body.description,</span></span>
+<span class="line"><span>        assignedTo: request.body.assignedTo,</span></span>
+<span class="line"><span>        status: &quot;Pending&quot;,</span></span>
+<span class="line"><span>        priority: request.body.priority</span></span>
+<span class="line"><span>    })</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return task</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br></div></div><h2 id="design-goals" tabindex="-1">Design Goals <a class="header-anchor" href="#design-goals" aria-label="Permalink to &quot;Design Goals&quot;">​</a></h2><p>Darion Programming Language should be:</p><ul><li>Clean</li><li>Readable</li><li>Fast</li><li>Secure</li><li>AI-friendly</li><li>Beginner-friendly</li><li>Enterprise-ready</li><li>Full-stack capable</li><li>Easy to deploy</li><li>Simple to maintain</li></ul><h2 id="future-features" tabindex="-1">Future Features <a class="header-anchor" href="#future-features" aria-label="Permalink to &quot;Future Features&quot;">​</a></h2><p>Darion can later support:</p><ul><li>Built-in authentication</li><li>Built-in API generation</li><li>Built-in database migrations</li><li>Built-in admin dashboard generation</li><li>AI code assistant</li><li>AI error fixer</li><li>AI documentation generator</li><li>Real-time collaboration</li><li>Docker deployment</li><li>Cloud deployment</li><li>Plugin system</li><li>Visual app builder</li><li>Darion package manager</li><li>Darion standard library</li><li>Darion Studio integration</li></ul><h2 id="darion-studio-integration" tabindex="-1">Darion Studio Integration <a class="header-anchor" href="#darion-studio-integration" aria-label="Permalink to &quot;Darion Studio Integration&quot;">​</a></h2><p>Darion Programming Language can become the base language inside Darion AI Studio.</p><p>Darion AI Studio can provide:</p><ul><li>Code editor</li><li>AI chat assistant</li><li>Live preview</li><li>Backend runner</li><li>Database designer</li><li>API tester</li><li>Deployment panel</li><li>Error doctor</li><li>Project planner</li><li>Security checker</li><li>Documentation generator</li></ul><p>This makes Darion not only a language, but a complete software development ecosystem.</p><h2 id="example-complete-mini-app" tabindex="-1">Example: Complete Mini App <a class="header-anchor" href="#example-complete-mini-app" aria-label="Permalink to &quot;Example: Complete Mini App&quot;">​</a></h2><div class="language-darion vp-adaptive-theme line-numbers-mode"><button title="Copy Code" class="copy"></button><span class="lang">darion</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>project {</span></span>
+<span class="line"><span>    name: &quot;Employee Management System&quot;</span></span>
+<span class="line"><span>    version: &quot;1.0.0&quot;</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>database {</span></span>
+<span class="line"><span>    provider: &quot;postgresql&quot;</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>model Employee {</span></span>
+<span class="line"><span>    id: number primary</span></span>
+<span class="line"><span>    name: text</span></span>
+<span class="line"><span>    email: text unique</span></span>
+<span class="line"><span>    role: text</span></span>
+<span class="line"><span>    salary: number</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>server app {</span></span>
+<span class="line"><span>    port 8080</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route GET &quot;/&quot; {</span></span>
+<span class="line"><span>    return {</span></span>
+<span class="line"><span>        message: &quot;Employee Management API&quot;</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route POST &quot;/employees&quot; {</span></span>
+<span class="line"><span>    employee = database.employees.create({</span></span>
+<span class="line"><span>        name: request.body.name,</span></span>
+<span class="line"><span>        email: request.body.email,</span></span>
+<span class="line"><span>        role: request.body.role,</span></span>
+<span class="line"><span>        salary: request.body.salary</span></span>
+<span class="line"><span>    })</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return {</span></span>
+<span class="line"><span>        message: &quot;Employee created successfully&quot;,</span></span>
+<span class="line"><span>        employee: employee</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route GET &quot;/employees&quot; {</span></span>
+<span class="line"><span>    employees = database.employees.findAll()</span></span>
+<span class="line"><span>    return employees</span></span>
+<span class="line"><span>}</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>route GET &quot;/employees/:id&quot; {</span></span>
+<span class="line"><span>    employee = database.employees.findById(request.params.id)</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    if employee == null {</span></span>
+<span class="line"><span>        return error &quot;Employee not found&quot;</span></span>
+<span class="line"><span>    }</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>    return employee</span></span>
+<span class="line"><span>}</span></span></code></pre><div class="line-numbers-wrapper" aria-hidden="true"><span class="line-number">1</span><br><span class="line-number">2</span><br><span class="line-number">3</span><br><span class="line-number">4</span><br><span class="line-number">5</span><br><span class="line-number">6</span><br><span class="line-number">7</span><br><span class="line-number">8</span><br><span class="line-number">9</span><br><span class="line-number">10</span><br><span class="line-number">11</span><br><span class="line-number">12</span><br><span class="line-number">13</span><br><span class="line-number">14</span><br><span class="line-number">15</span><br><span class="line-number">16</span><br><span class="line-number">17</span><br><span class="line-number">18</span><br><span class="line-number">19</span><br><span class="line-number">20</span><br><span class="line-number">21</span><br><span class="line-number">22</span><br><span class="line-number">23</span><br><span class="line-number">24</span><br><span class="line-number">25</span><br><span class="line-number">26</span><br><span class="line-number">27</span><br><span class="line-number">28</span><br><span class="line-number">29</span><br><span class="line-number">30</span><br><span class="line-number">31</span><br><span class="line-number">32</span><br><span class="line-number">33</span><br><span class="line-number">34</span><br><span class="line-number">35</span><br><span class="line-number">36</span><br><span class="line-number">37</span><br><span class="line-number">38</span><br><span class="line-number">39</span><br><span class="line-number">40</span><br><span class="line-number">41</span><br><span class="line-number">42</span><br><span class="line-number">43</span><br><span class="line-number">44</span><br><span class="line-number">45</span><br><span class="line-number">46</span><br><span class="line-number">47</span><br><span class="line-number">48</span><br><span class="line-number">49</span><br><span class="line-number">50</span><br><span class="line-number">51</span><br><span class="line-number">52</span><br><span class="line-number">53</span><br><span class="line-number">54</span><br><span class="line-number">55</span><br></div></div><h2 id="conclusion" tabindex="-1">Conclusion <a class="header-anchor" href="#conclusion" aria-label="Permalink to &quot;Conclusion&quot;">​</a></h2><p>Darion Programming Language is a future-focused language concept created to support the next generation of software development.</p><p>It combines simple syntax, full-stack development, AI-native workflows, database integration, backend APIs, frontend components, and deployment support into one clean ecosystem.</p><p>Darion is built with the goal of turning ideas into production-ready software faster, cleaner, and smarter.</p></div>`);
+}
+const _sfc_setup = _sfc_main.setup;
+_sfc_main.setup = (props, ctx) => {
+  const ssrContext = useSSRContext();
+  (ssrContext.modules || (ssrContext.modules = /* @__PURE__ */ new Set())).add("docs/darion-programming-language.md");
+  return _sfc_setup ? _sfc_setup(props, ctx) : void 0;
+};
+const darionProgrammingLanguage = /* @__PURE__ */ _export_sfc(_sfc_main, [["ssrRender", _sfc_ssrRender]]);
+export {
+  __pageData,
+  darionProgrammingLanguage as default
+};

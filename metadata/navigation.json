@@ -1,0 +1,39 @@
+{
+  "groups": [
+    {
+      "title": "Fundamentals",
+      "items": [
+        {
+          "title": "Introduction",
+          "slug": "introduction",
+          "order": 10
+        },
+        {
+          "title": "Architecture",
+          "slug": "architecture",
+          "order": 20
+        }
+      ]
+    },
+    {
+      "title": "Core Modules",
+      "items": [
+        {
+          "title": "Getting Started",
+          "slug": "getting-started",
+          "order": 10
+        },
+        {
+          "title": "Authentication",
+          "slug": "authentication",
+          "order": 20
+        },
+        {
+          "title": "API Specifications",
+          "slug": "api-specifications",
+          "order": 30
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "members": [
+    {
+      "project": "company-systems",
+      "user": "viewer",
+      "role": "viewer"
+    },
+    {
+      "project": "darion-bpo-platform",
+      "user": "editor",
+      "role": "editor"
+    },
+    {
+      "project": "darion-bpo-platform",
+      "user": "admin",
+      "role": "admin"
+    }
+  ]
+}

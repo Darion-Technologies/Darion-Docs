@@ -1,0 +1,32 @@
+{
+  "eyebrow": "Darion Technologies",
+  "title": "Developer Documentation",
+  "subtitle": "Browse technical references, architectural guidance, and implementation notes for Darion systems.",
+  "cards": [
+    {
+      "title": "Fundamentals",
+      "href": "/docs/introduction",
+      "description": "Start with the concepts and documentation model."
+    },
+    {
+      "title": "Architecture",
+      "href": "/docs/architecture",
+      "description": "Explore system boundaries and runtime responsibilities."
+    },
+    {
+      "title": "Guides",
+      "href": "/docs/getting-started",
+      "description": "Follow task-oriented workflows for implementation."
+    },
+    {
+      "title": "API Reference",
+      "href": "/docs/api-specifications",
+      "description": "Review schemas, envelopes, and compatibility rules."
+    },
+    {
+      "title": "Darion Programming Language",
+      "href": "/docs/darion-programming-language",
+      "description": "Learn the language foundation, syntax model, examples, and system-level usage."
+    }
+  ]
+}

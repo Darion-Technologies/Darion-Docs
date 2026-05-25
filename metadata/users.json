@@ -1,0 +1,22 @@
+{
+  "users": [
+    {
+      "id": "admin",
+      "name": "Admin",
+      "role": "admin",
+      "disabled": false
+    },
+    {
+      "id": "editor",
+      "name": "Editor",
+      "role": "editor",
+      "disabled": false
+    },
+    {
+      "id": "viewer",
+      "name": "Viewer",
+      "role": "viewer",
+      "disabled": false
+    }
+  ]
+}
