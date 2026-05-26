@@ -28,10 +28,34 @@ DARION_ADMIN_SECRET="change-this-local-dev-secret" npm run docs:dev
 
 ## Supabase Foundation
 
-The enterprise RBAC data model is defined in:
+Granular permission-based RBAC is defined in:
+
+```text
+supabase/migrations/20260526100000_granular_permission_rbac.sql
+```
+
+Enterprise project-scoped docs (optional) live in:
 
 ```text
 supabase/migrations/20260525000000_enterprise_docs_rbac.sql
+```
+
+RBAC service layer:
+
+```text
+src/supabase/services/rbac.mjs
+src/supabase/middleware/requirePermission.mjs
+src/supabase/types/rbac.ts
+```
+
+Admin API routes (development):
+
+```text
+/__admin/api/rbac/roles
+/__admin/api/rbac/permissions
+/__admin/api/rbac/user-roles
+/__admin/api/rbac/documents
+/__admin/api/rbac/audit-logs
 ```
 
 It creates project-scoped internal docs, assignments, comments, versions,

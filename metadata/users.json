@@ -4,18 +4,42 @@
       "id": "admin",
       "name": "Admin",
       "role": "admin",
+      "password": "admin123",
       "disabled": false
     },
     {
       "id": "editor",
       "name": "Editor",
       "role": "editor",
+      "password": "editor123",
       "disabled": false
     },
     {
       "id": "viewer",
       "name": "Viewer",
       "role": "viewer",
+      "password": "viewer123",
+      "disabled": false
+    },
+    {
+      "id": "dev-001",
+      "name": "Developer One",
+      "role": "developer",
+      "password": "dev123",
+      "disabled": false
+    },
+    {
+      "id": "dev-002",
+      "name": "Developer Two",
+      "role": "developer",
+      "password": "dev123",
+      "disabled": false
+    },
+    {
+      "id": "in-001",
+      "name": "SRS",
+      "role": "intern",
+      "password": "dev123",
       "disabled": false
     }
   ]

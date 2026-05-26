@@ -1,10 +1,10 @@
-project_id = "darion-docs"
+project_id = "llflitxgfwrkutyeyirfa"
 
 [api]
 enabled = true
 port = 54321
-schemas = ["public"]
-extra_search_path = ["public", "extensions"]
+schemas = ["public", "rbac"]
+extra_search_path = ["public", "rbac", "extensions"]
 max_rows = 1000
 
 [db]

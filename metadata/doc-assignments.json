@@ -11,6 +11,26 @@
       "assignedBy": "admin"
     },
     {
+      "id": "engineering-handbook-developers",
+      "scope": "internal",
+      "slug": "engineering-handbook",
+      "project": "company-systems",
+      "targetType": "role",
+      "target": "developer",
+      "accessLevel": "read",
+      "assignedBy": "admin"
+    },
+    {
+      "id": "engineering-handbook-dev-001",
+      "scope": "internal",
+      "slug": "engineering-handbook",
+      "project": "company-systems",
+      "targetType": "user",
+      "target": "dev-001",
+      "accessLevel": "read",
+      "assignedBy": "admin"
+    },
+    {
       "id": "m1-planning-editors",
       "scope": "internal",
       "slug": "m1-20planning",
@@ -18,6 +38,16 @@
       "targetType": "role",
       "target": "editor",
       "accessLevel": "edit",
+      "assignedBy": "admin"
+    },
+    {
+      "id": "m1-planning-developers",
+      "scope": "internal",
+      "slug": "m1-20planning",
+      "project": "darion-bpo-platform",
+      "targetType": "role",
+      "target": "developer",
+      "accessLevel": "read",
       "assignedBy": "admin"
     },
     {

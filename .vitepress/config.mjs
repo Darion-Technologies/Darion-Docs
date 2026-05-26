@@ -1,6 +1,9 @@
-import { defineConfig } from 'vitepress'
+import { defineConfig, loadEnv } from 'vitepress'
 import { writerApiPlugin } from './plugins/writer-api.mjs'
 import { getSidebar } from './sidebar.mjs'
+
+const env = loadEnv(process.env.NODE_ENV || 'development', process.cwd(), '')
+Object.assign(process.env, env)
 
 const isDevelopment = process.env.NODE_ENV !== 'production'
 

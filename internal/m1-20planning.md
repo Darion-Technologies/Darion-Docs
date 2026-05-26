@@ -8,6 +8,7 @@ tags: "planning, project"
 visibility: "internal"
 project: "darion-bpo-platform"
 category: "planning"
+roles: "admin,Developer"
 ---
 # M1 Planning
 

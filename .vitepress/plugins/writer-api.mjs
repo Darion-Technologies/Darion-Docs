@@ -2,11 +2,12 @@ import { execFile } from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { promisify } from 'node:util'
+import { handleRbacApi } from '../server/rbac-api.mjs'
 
 const execFileAsync = promisify(execFile)
 const defaultSecret = 'darion-local-admin'
 const scopes = new Set(['public', 'internal'])
-const roleRank = { viewer: 1, commenter: 2, editor: 3, project_owner: 4, admin: 5, super_admin: 6 }
+const roleRank = { intern: 1, viewer: 2, commenter: 3, developer: 4, editor: 4, project_owner: 5, admin: 6, super_admin: 7 }
 const accessRank = { none: 0, read: 1, comment: 2, edit: 3, owner: 4 }
 
 export function writerApiPlugin() {
@@ -116,17 +117,35 @@ async function handleAdminApi(server, request, response, url) {
     return
   }
 
+  if (parts[2] === 'rbac') {
+    await handleRbacApi(request, response, url, method, session, {
+      sendJson,
+      readJsonBody
+    })
+    return
+  }
+
   sendJson(response, 404, { error: 'Admin endpoint not found.' })
 }
 
 async function handleInternalApi(server, request, response, url) {
   await ensurePrivateFiles(server)
 
-  const session = await requireSession(server, request, response)
-  if (!session) return
-
   const parts = url.pathname.split('/').filter(Boolean)
   const method = request.method || 'GET'
+
+  if (method === 'POST' && parts[2] === 'session') {
+    await handleInternalSession(server, request, response)
+    return
+  }
+
+  const session = await requireInternalSession(server, request, response)
+  if (!session) return
+
+  if (method === 'GET' && parts[2] === 'me') {
+    sendJson(response, 200, session)
+    return
+  }
 
   if (method === 'GET' && parts[2] === 'navigation') {
     sendJson(response, 200, await readJson(server, 'metadata/internal-navigation.json', defaultInternalNavigation()))
@@ -176,6 +195,31 @@ async function handleSession(server, request, response) {
   }
 
   const session = await makeSession(server, user)
+  sendJson(response, 200, session)
+}
+
+async function handleInternalSession(server, request, response) {
+  const body = await readJsonBody(request)
+  const userId = String(body.userId || body.id || '').trim()
+  const password = String(body.password || '')
+
+  if (!userId || !password) {
+    sendJson(response, 400, { error: 'User ID and password are required.' })
+    return
+  }
+
+  const user = await authenticateUser(server, userId, password)
+  if (!user) {
+    sendJson(response, 401, { error: 'Invalid user ID or password.' })
+    return
+  }
+
+  const session = await makeSession(server, user, { portal: 'internal' })
+  if (!canAccessInternalPortal(session)) {
+    sendJson(response, 403, { error: 'Your role does not have access to internal documentation.' })
+    return
+  }
+
   sendJson(response, 200, session)
 }
 
@@ -307,35 +351,41 @@ async function handleUsersApi(server, request, response, parts, method) {
     return
   }
 
-  const users = await readUsers(server)
+  const storedUsers = await readStoredUsers(server)
   const userId = parts[3]
 
   if (method === 'POST') {
     const body = await readJsonBody(request)
-    const user = normalizeUser(body)
-    if (users.some((entry) => entry.id === user.id)) {
+    const user = normalizeStoredUser(body)
+    if (storedUsers.some((entry) => entry.id === user.id)) {
       sendJson(response, 409, { error: 'User already exists.' })
       return
     }
-    users.push(user)
-    await writeJson(server, 'metadata/users.json', { users })
-    sendJson(response, 201, user)
+    if (!user.password) {
+      sendJson(response, 400, { error: 'Password is required for internal sign-in.' })
+      return
+    }
+    storedUsers.push(user)
+    await writeStoredUsers(server, storedUsers)
+    sendJson(response, 201, sanitizeUser(user))
     return
   }
 
   if (method === 'PUT' && userId) {
     const body = await readJsonBody(request)
-    const index = users.findIndex((entry) => entry.id === userId)
+    const index = storedUsers.findIndex((entry) => entry.id === userId)
     if (index === -1) return sendJson(response, 404, { error: 'User not found.' })
-    users[index] = normalizeUser({ ...users[index], ...body, id: userId })
-    await writeJson(server, 'metadata/users.json', { users })
-    sendJson(response, 200, users[index])
+    const nextUser = normalizeStoredUser({ ...storedUsers[index], ...body, id: userId })
+    if (!nextUser.password) nextUser.password = storedUsers[index].password
+    storedUsers[index] = nextUser
+    await writeStoredUsers(server, storedUsers)
+    sendJson(response, 200, sanitizeUser(storedUsers[index]))
     return
   }
 
   if (method === 'DELETE' && userId) {
-    const nextUsers = users.filter((entry) => entry.id !== userId)
-    await writeJson(server, 'metadata/users.json', { users: nextUsers })
+    const nextUsers = storedUsers.filter((entry) => entry.id !== userId)
+    await writeStoredUsers(server, nextUsers)
     sendJson(response, 200, { message: 'User deleted.' })
     return
   }
@@ -537,6 +587,7 @@ async function listDocuments(server, scope) {
       status: frontmatter.status || 'published',
       owner: frontmatter.owner || 'docs',
       tags: parseCsv(frontmatter.tags),
+      roles: parseCsv(frontmatter.roles),
       visibility: frontmatter.visibility || scope,
       path: scope === 'public' ? `docs/${slug}.md` : `internal/${slug}.md`,
       route: scope === 'public' ? `/docs/${slug}` : `/__internal?doc=${slug}`
@@ -563,6 +614,7 @@ async function readDocument(server, scope, slug) {
     status: frontmatter.status || 'published',
     owner: frontmatter.owner || 'docs',
     tags: parseCsv(frontmatter.tags),
+    roles: parseCsv(frontmatter.roles),
     visibility: frontmatter.visibility || scope,
     markdown
   }
@@ -587,6 +639,7 @@ async function saveDocument(server, scope, body) {
     status: body.status || 'draft',
     owner: body.owner || 'docs',
     tags: Array.isArray(body.tags) ? body.tags.join(', ') : body.tags || '',
+    roles: Array.isArray(body.roles) ? body.roles.join(', ') : body.roles || '',
     visibility: body.visibility || scope
   }
 
@@ -721,39 +774,64 @@ async function findBrokenLinks(server, markdown, scope) {
 }
 
 async function requireSession(server, request, response) {
+  const session = await resolveSession(server, request, { allowHeaderSecret: true })
+  if (!session) {
+    sendJson(response, 401, { error: 'Admin session required.' })
+    return null
+  }
+
+  return session
+}
+
+async function requireInternalSession(server, request, response) {
+  const session = await resolveSession(server, request, { allowHeaderSecret: false })
+  if (!session) {
+    sendJson(response, 401, { error: 'Sign in with your user ID and password to access internal docs.' })
+    return null
+  }
+
+  if (!canAccessInternalPortal(session)) {
+    sendJson(response, 403, { error: 'Your role does not have access to internal documentation.' })
+    return null
+  }
+
+  return session
+}
+
+async function resolveSession(server, request, { allowHeaderSecret = false } = {}) {
   const token = readAuthToken(request)
-  const secret = request.headers['x-admin-secret']
   const expected = process.env.DARION_ADMIN_SECRET || defaultSecret
-  let userId = request.headers['x-admin-user'] || 'admin'
+  let userId = ''
+
+  let portal = 'admin'
 
   if (token) {
     const decoded = decodeToken(token)
-    if (!decoded || decoded.secret !== expected) {
-      sendJson(response, 401, { error: 'Invalid session token.' })
-      return null
-    }
+    if (!decoded || decoded.secret !== expected || !decoded.userId) return null
     userId = decoded.userId
-  } else if (secret !== expected) {
-    sendJson(response, 401, { error: 'Admin session required.' })
+    portal = decoded.portal || 'admin'
+  } else if (allowHeaderSecret) {
+    const secret = request.headers['x-admin-secret']
+    if (secret !== expected) return null
+    userId = request.headers['x-admin-user'] || 'admin'
+  } else {
     return null
   }
 
   const users = await readUsers(server)
   const user = users.find((entry) => entry.id === userId && !entry.disabled)
-  if (!user) {
-    sendJson(response, 403, { error: 'User is disabled or missing.' })
-    return null
-  }
+  if (!user) return null
 
-  return makeSession(server, user)
+  return makeSession(server, user, { portal })
 }
 
-async function makeSession(server, user) {
+async function makeSession(server, user, options = {}) {
   const roles = await readRoles(server)
-  const role = roles.find((entry) => entry.id === user.role) || roles[0]
+  const role = roles.find((entry) => entry.id === user.role) || roles.find(r => r.id === 'viewer') || roles[0]
   const token = encodeToken({
     userId: user.id,
-    secret: process.env.DARION_ADMIN_SECRET || defaultSecret
+    secret: process.env.DARION_ADMIN_SECRET || defaultSecret,
+    portal: options.portal || 'admin'
   })
 
   return {
@@ -761,6 +839,26 @@ async function makeSession(server, user) {
     user,
     role
   }
+}
+
+async function authenticateUser(server, userId, password) {
+  const users = await readStoredUsers(server)
+  const user = users.find((entry) => entry.id === normalizeSlug(userId) && !entry.disabled)
+  if (!user || !user.password) return null
+  if (user.password !== password) return null
+  return sanitizeUser(user)
+}
+
+function canAccessInternalPortal(session) {
+  const permissions = session.role?.permissions || []
+  return permissions.some((permission) => {
+    return (
+      permission === 'internal:*' ||
+      permission === 'internal:read' ||
+      permission === 'internal:write' ||
+      permission.startsWith('admin:')
+    )
+  })
 }
 
 function requireRole(response, session, role) {
@@ -776,9 +874,38 @@ function hasRole(session, required) {
   return (roleRank[session.user.role] || 0) >= (roleRank[required] || 0)
 }
 
-async function readUsers(server) {
+async function readUsers(server, { includeSecrets = false } = {}) {
+  const storedUsers = await readStoredUsers(server)
+  return storedUsers.map((user) => (includeSecrets ? user : sanitizeUser(user)))
+}
+
+async function readStoredUsers(server) {
   const payload = await readJson(server, 'metadata/users.json', defaultUsers())
-  return Array.isArray(payload.users) ? payload.users.map(normalizeUser) : []
+  return Array.isArray(payload.users) ? payload.users.map(normalizeStoredUser) : []
+}
+
+async function writeStoredUsers(server, users) {
+  await writeJson(server, 'metadata/users.json', { users })
+}
+
+function normalizeStoredUser(input) {
+  const role = Object.prototype.hasOwnProperty.call(roleRank, input.role) ? input.role : 'viewer'
+  return {
+    id: normalizeSlug(input.id || input.name || role),
+    name: String(input.name || titleFromSlug(input.id || role)).trim(),
+    role,
+    password: String(input.password || '').trim(),
+    disabled: Boolean(input.disabled)
+  }
+}
+
+function sanitizeUser(user) {
+  return {
+    id: user.id,
+    name: user.name,
+    role: user.role,
+    disabled: user.disabled
+  }
 }
 
 async function readRoles(server) {
@@ -825,10 +952,28 @@ function canAccessDocument(assignments, document, session, minimumAccess, projec
 function getDocumentAccessLevel(assignments, document, session, projectMembers = []) {
   if (hasRole(session, 'admin')) return 'owner'
 
-  const matches = assignments.filter((assignment) => {
+  let virtualAssignments = assignments;
+  if (Array.isArray(document.roles) && document.roles.length > 0) {
+    virtualAssignments = assignments.filter((assignment) => {
+      if (assignment.scope === document.scope && assignment.slug === document.slug) {
+        return assignment.targetType === 'user';
+      }
+      return true;
+    }).concat(document.roles.map(function(role) {
+      return { scope: document.scope, slug: document.slug, targetType: 'exact_role', target: role, accessLevel: 'read' };
+    }));
+  }
+
+  const matches = virtualAssignments.filter((assignment) => {
     if (assignment.scope !== document.scope || assignment.slug !== document.slug) return false
     if (assignment.targetType === 'user') return assignment.target === session.user.id
-    if (assignment.targetType === 'role') return (roleRank[session.user.role] || 0) >= (roleRank[assignment.target] || 0)
+    if (assignment.targetType === 'role') {
+      if (session.user.role === assignment.target) return true
+      return (roleRank[session.user.role] || 0) >= (roleRank[assignment.target] || 0)
+    }
+    if (assignment.targetType === 'exact_role') {
+      return session.user.role.toLowerCase() === assignment.target.toLowerCase();
+    }
     if (assignment.targetType === 'project') {
       return assignment.target === document.project && projectMembers.some((member) => member.project === assignment.target && member.user === session.user.id)
     }
@@ -840,14 +985,20 @@ function getDocumentAccessLevel(assignments, document, session, projectMembers =
   }, 'none')
 }
 
-function normalizeUser(input) {
+function normalizeUser(input, { includeSecrets = false } = {}) {
   const role = Object.prototype.hasOwnProperty.call(roleRank, input.role) ? input.role : 'viewer'
-  return {
+  const user = {
     id: normalizeSlug(input.id || input.name || role),
     name: String(input.name || titleFromSlug(input.id || role)).trim(),
     role,
     disabled: Boolean(input.disabled)
   }
+
+  if (includeSecrets && input.password) {
+    user.password = String(input.password)
+  }
+
+  return user
 }
 
 function normalizeProject(input) {
@@ -932,6 +1083,7 @@ function ensureFrontmatter(markdown, metadata) {
     `visibility: ${yamlValue(metadata.visibility)}`,
     `project: ${yamlValue(metadata.project)}`,
     `category: ${yamlValue(metadata.category)}`,
+    `roles: ${yamlValue(metadata.roles)}`,
     '---',
     ''
   ].join('\n')
@@ -1111,9 +1263,11 @@ function defaultSettings() {
 function defaultUsers() {
   return {
     users: [
-      { id: 'admin', name: 'Admin', role: 'admin', disabled: false },
-      { id: 'editor', name: 'Editor', role: 'editor', disabled: false },
-      { id: 'viewer', name: 'Viewer', role: 'viewer', disabled: false }
+      { id: 'admin', name: 'Admin', role: 'admin', password: 'admin123', disabled: false },
+      { id: 'editor', name: 'Editor', role: 'editor', password: 'editor123', disabled: false },
+      { id: 'viewer', name: 'Viewer', role: 'viewer', password: 'viewer123', disabled: false },
+      { id: 'dev-001', name: 'Developer One', role: 'developer', password: 'dev123', disabled: false },
+      { id: 'dev-002', name: 'Developer Two', role: 'developer', password: 'dev123', disabled: false }
     ]
   }
 }
@@ -1137,6 +1291,11 @@ function defaultRoles() {
         permissions: ['documents:read', 'documents:write', 'documents:assign', 'internal:read', 'internal:write']
       },
       {
+        id: 'developer',
+        name: 'Developer',
+        permissions: ['documents:read', 'internal:read', 'internal:write']
+      },
+      {
         id: 'editor',
         name: 'Editor',
         permissions: ['documents:read', 'documents:write', 'internal:read', 'internal:write']
@@ -1149,6 +1308,11 @@ function defaultRoles() {
       {
         id: 'viewer',
         name: 'Viewer',
+        permissions: ['internal:read']
+      },
+      {
+        id: 'intern',
+        name: 'Intern',
         permissions: ['internal:read']
       }
     ]
@@ -1323,6 +1487,26 @@ ${getPrivateCss()}
     };
   }
 
+  function renderBreadcrumbs(trail) {
+    return '<nav class="breadcrumbs" aria-label="Breadcrumb">' + trail.map(function (item, index) {
+      if (index === trail.length - 1) return '<strong>' + escapeHtml(item.text) + '</strong>';
+      return '<a href="' + escapeHtml(item.href) + '">' + escapeHtml(item.text) + '</a><span>/</span>';
+    }).join('') + '</nav>';
+  }
+
+  function adminBreadcrumbs() {
+    return renderBreadcrumbs([
+      { text: 'Dashboard', href: '/' },
+      { text: 'Admin', href: '/__admin' },
+      { text: labels[state.tab] || 'Overview', href: '/__admin#' + state.tab }
+    ]);
+  }
+
+  function syncTabFromLocation() {
+    var hashTab = (location.hash || '').replace(/^#/, '');
+    if (hashTab && sections.indexOf(hashTab) !== -1) state.tab = hashTab;
+  }
+
   function layout(content) {
     document.getElementById('app').innerHTML =
       '<aside class="rail"><p class="eyebrow">Admin Console</p>' +
@@ -1330,9 +1514,13 @@ ${getPrivateCss()}
         return '<button class="' + (state.tab === item ? 'active' : '') + '" data-tab="' + item + '">' + labels[item] + '</button>';
       }).join('') +
       '<button data-logout="1">Sign Out</button></aside>' +
-      '<section class="panel">' + content + '</section>';
+      '<section class="panel">' + adminBreadcrumbs() + content + '</section>';
     Array.prototype.forEach.call(document.querySelectorAll('[data-tab]'), function (button) {
-      button.onclick = function () { state.tab = button.dataset.tab; render(); };
+      button.onclick = function () {
+        state.tab = button.dataset.tab;
+        history.pushState(null, '', '/__admin#' + state.tab);
+        render();
+      };
     });
     document.querySelector('[data-logout]').onclick = function () {
       localStorage.removeItem('darionAdminToken');
@@ -1342,6 +1530,7 @@ ${getPrivateCss()}
   }
 
   function load() {
+    syncTabFromLocation();
     api('/__admin/api/me').then(function (session) {
       state.user = session.user;
       return api('/__admin/api/documents');
@@ -1350,6 +1539,12 @@ ${getPrivateCss()}
       render();
     }).catch(function () { renderLogin(); });
   }
+
+  window.addEventListener('popstate', function () {
+    if (!state.token) return;
+    syncTabFromLocation();
+    render();
+  });
 
   function render() {
     if (!state.token) return renderLogin();
@@ -1377,8 +1572,9 @@ ${getPrivateCss()}
     var docs = state.docs.filter(function (doc) { return doc.scope === scope; });
     layout('<div class="panel-head"><p class="eyebrow">' + scope + '</p><h1>' + (scope === 'public' ? 'Public Documents' : 'Internal Documents') + '</h1><button id="newDoc">New Document</button></div>' +
       '<div class="doc-layout"><div class="list">' + docs.map(function (doc) {
-        return '<button data-doc="' + doc.slug + '"><strong>' + escapeHtml(doc.title) + '</strong><span>' + escapeHtml(doc.projectName || doc.group) + ' · ' + escapeHtml(doc.status) + '</span></button>';
-      }).join('') + '</div><form class="editor" id="editor"><input name="title" placeholder="Title"><input name="slug" placeholder="slug"><div class="two"><input name="group" placeholder="Group"><input name="order" type="number" placeholder="Order"></div><div class="two"><input name="project" placeholder="Project slug"><input name="category" placeholder="Category"></div><div class="two"><input name="owner" placeholder="Owner"><input name="tags" placeholder="tags, comma separated"></div><select name="status"><option>draft</option><option>review</option><option>published</option><option>archived</option></select><textarea name="markdown" spellcheck="false" placeholder="# New document"></textarea><div class="actions"><button type="submit">Save</button><button type="button" id="duplicate">Duplicate</button><button type="button" id="archive">Archive</button><button type="button" id="delete">Delete</button></div></form></div>');
+        var roleText = (doc.roles && doc.roles.length > 0) ? ' · Roles: ' + escapeHtml(doc.roles.join(', ')) : '';
+        return '<button data-doc="' + doc.slug + '"><strong>' + escapeHtml(doc.title) + '</strong><span>' + escapeHtml(doc.projectName || doc.group) + ' · ' + escapeHtml(doc.status) + roleText + '</span></button>';
+      }).join('') + '</div><form class="editor" id="editor"><input name="title" placeholder="Title"><input name="slug" placeholder="slug"><div class="two"><input name="group" placeholder="Group"><input name="order" type="number" placeholder="Order"></div><div class="two"><input name="project" placeholder="Project slug"><input name="category" placeholder="Category"></div><div class="two"><input name="owner" placeholder="Owner"><input name="tags" placeholder="tags, comma separated"></div><div class="two"><input name="roles" placeholder="Allowed roles, comma separated"><select name="status"><option>draft</option><option>review</option><option>published</option><option>archived</option></select></div><textarea name="markdown" spellcheck="false" placeholder="# New document"></textarea><div class="actions"><button type="submit">Save</button><button type="button" id="duplicate">Duplicate</button><button type="button" id="archive">Archive</button><button type="button" id="delete">Delete</button></div></form></div>');
     document.getElementById('newDoc').onclick = function () { fillEditor({ scope: scope, title: '', slug: '', group: scope === 'public' ? 'Core Modules' : 'Internal', order: 1000, owner: 'docs', tags: [], status: 'draft', markdown: '# New document\\n' }); };
     Array.prototype.forEach.call(document.querySelectorAll('[data-doc]'), function (button) {
       button.onclick = function () {
@@ -1412,13 +1608,14 @@ ${getPrivateCss()}
     form.order.value = doc.order || 1000;
     form.owner.value = doc.owner || 'docs';
     form.tags.value = (doc.tags || []).join(', ');
+    if (form.roles) form.roles.value = (doc.roles || []).join(', ');
     form.status.value = doc.status || 'draft';
     form.markdown.value = doc.markdown || '# ' + (doc.title || 'New document') + '\\n';
   }
 
   function editorPayload(scope) {
     var form = document.getElementById('editor');
-    return { scope: scope, title: form.title.value, slug: form.slug.value, group: form.group.value, project: form.project.value, category: form.category.value, order: Number(form.order.value || 1000), owner: form.owner.value, tags: form.tags.value, status: form.status.value, markdown: form.markdown.value, visibility: scope };
+    return { scope: scope, title: form.title.value, slug: form.slug.value, group: form.group.value, project: form.project.value, category: form.category.value, order: Number(form.order.value || 1000), owner: form.owner.value, tags: form.tags.value, roles: (form.roles ? form.roles.value : ''), status: form.status.value, markdown: form.markdown.value, visibility: scope };
   }
 
   function docAction(scope, action) {
@@ -1437,7 +1634,7 @@ ${getPrivateCss()}
   }
 
   function renderUsers() {
-    layout('<div class="panel-head"><p class="eyebrow">Access Control</p><h1>Users & Roles</h1></div><div id="users"></div><form class="inline-form" id="newUser"><input name="id" placeholder="id"><input name="name" placeholder="Name"><select name="role"><option>admin</option><option>project_owner</option><option>editor</option><option>commenter</option><option>viewer</option></select><button>Add User</button></form>');
+    layout('<div class="panel-head"><p class="eyebrow">Access Control</p><h1>Users & Roles</h1></div><div id="users"></div><form class="inline-form" id="newUser"><input name="id" placeholder="id"><input name="name" placeholder="Name"><input name="password" type="password" placeholder="Password"><select name="role"><option>admin</option><option>developer</option><option>project_owner</option><option>editor</option><option>commenter</option><option>viewer</option><option>intern</option></select><button>Add User</button></form>');
     api('/__admin/api/users').then(function (payload) {
       document.getElementById('users').innerHTML = payload.users.map(function (user) {
         return '<div class="row"><strong>' + escapeHtml(user.name) + '</strong><span>' + escapeHtml(user.role) + (user.disabled ? ' · disabled' : '') + '</span><button data-disable="' + user.id + '">' + (user.disabled ? 'Enable' : 'Disable') + '</button><button data-remove="' + user.id + '">Delete</button></div>';
@@ -1454,12 +1651,12 @@ ${getPrivateCss()}
     }).catch(alertError);
     document.getElementById('newUser').onsubmit = function (event) {
       event.preventDefault();
-      api('/__admin/api/users', { method: 'POST', body: JSON.stringify({ id: this.id.value, name: this.name.value, role: this.role.value }) }).then(renderUsers).catch(alertError);
+      api('/__admin/api/users', { method: 'POST', body: JSON.stringify({ id: this.id.value, name: this.name.value, password: this.password.value, role: this.role.value }) }).then(renderUsers).catch(alertError);
     };
   }
 
   function renderProjectsAccess() {
-    layout('<div class="panel-head"><p class="eyebrow">Internal RBAC</p><h1>Projects & Access</h1></div><div class="access-grid"><section><h2>Projects</h2><div id="projects"></div><form class="stack-form" id="newProject"><input name="id" placeholder="project-slug"><input name="name" placeholder="Project name"><textarea name="description" placeholder="Project description"></textarea><button>Add Project</button></form></section><section><h2>Assignments</h2><div id="assignments"></div><form class="stack-form" id="newAssignment"><input name="slug" placeholder="internal-doc-slug"><input name="project" placeholder="project-slug"><select name="targetType"><option>role</option><option>user</option><option>project</option></select><input name="target" placeholder="viewer, editor, admin, user id, or project slug"><select name="accessLevel"><option>read</option><option>comment</option><option>edit</option><option>owner</option></select><button>Assign Access</button></form></section></div>');
+    layout('<div class="panel-head"><p class="eyebrow">Internal RBAC</p><h1>Projects & Access</h1></div><div class="access-grid"><section><h2>Projects</h2><div id="projects"></div><form class="stack-form" id="newProject"><input name="id" placeholder="project-slug"><input name="name" placeholder="Project name"><textarea name="description" placeholder="Project description"></textarea><button>Add Project</button></form></section><section><h2>Assignments</h2><div id="assignments"></div><form class="stack-form" id="newAssignment"><input name="slug" placeholder="internal-doc-slug"><input name="project" placeholder="project-slug"><select name="targetType"><option>role</option><option>user</option><option>project</option></select><input name="target" placeholder="intern, viewer, editor, admin, user id, or project slug"><select name="accessLevel"><option>read</option><option>comment</option><option>edit</option><option>owner</option></select><button>Assign Access</button></form></section></div>');
     Promise.all([api('/__admin/api/projects'), api('/__admin/api/assignments')]).then(function (results) {
       var projects = results[0].projects;
       var assignments = results[1].assignments;
@@ -1532,73 +1729,205 @@ ${getPrivateCss()}
 <body>
 <div class="shell">
   <header class="topbar">
-    <a class="brand" href="/">Darion Docs</a>
+    <a class="brand" href="/__internal">Darion Internals</a>
     <nav class="topnav" aria-label="Private portals">
-      <a href="/">Overview</a>
-      <a href="/docs/getting-started">Guides</a>
-      <a href="/docs/api-specifications">API Reference</a>
+      <a href="/__internal">Internal</a>
     </nav>
+    <div class="profile-icon" id="profileDropdownToggle" aria-label="User profile" aria-haspopup="true" aria-expanded="false" tabindex="0">
+      <span id="profileInitial">?</span>
+      <div id="profileDropdown" class="profile-dropdown" style="display: none;">
+        <div class="profile-dropdown-header">
+          <strong id="dropdownName">User</strong>
+          <small id="dropdownRole">Role</small>
+        </div>
+        <hr>
+        <button id="dropdownSignOut">Sign Out</button>
+      </div>
+    </div>
   </header>
   <main id="app" class="internal-workspace"></main>
 </div>
 <script>
 (function () {
-  var state = { token: localStorage.getItem('darionAdminToken') || '', docs: [], active: null, query: '' };
+  var state = { token: localStorage.getItem('darionInternalToken') || '', user: null, docs: [], active: null, query: '', group: '' };
   function api(path, options) {
     options = options || {};
     options.headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
     if (state.token) options.headers.Authorization = 'Bearer ' + state.token;
     return fetch(path, options).then(function (response) {
       return response.json().then(function (payload) {
-        if (!response.ok) throw new Error(payload.error || 'Request failed.');
+        if (!response.ok) throw new Error(payload.error || payload.message || 'Request failed.');
         return payload;
       });
     });
   }
   function renderLogin(message) {
-    document.getElementById('app').innerHTML = '<section class="login-card"><p class="eyebrow">My Internals</p><h1>Private Documentation</h1><p>Sign in with the local docs secret and an enabled user profile.</p>' + (message ? '<p class="notice">' + escapeHtml(message) + '</p>' : '') + '<label>Secret<input id="secret" type="password" placeholder="DARION_ADMIN_SECRET"></label><label>Profile<select id="userId"><option value="viewer">Viewer</option><option value="editor">Editor</option><option value="admin">Admin</option></select></label><button id="login">Continue</button></section>';
+    document.getElementById('app').innerHTML =
+      '<section class="login-card">' +
+      '<p class="eyebrow">Internal Documentation</p>' +
+      '<h1>Sign in</h1>' +
+      '<p>Enter your assigned user ID and password. You will only see internal documents allowed for your role.</p>' +
+      (message ? '<p class="notice">' + escapeHtml(message) + '</p>' : '') +
+      '<label>User ID<input id="userId" type="text" autocomplete="username" placeholder="e.g. dev-001"></label>' +
+      '<label>Password<input id="password" type="password" autocomplete="current-password" placeholder="Your password"></label>' +
+      '<button id="login">Sign in to Internal Docs</button>' +
+      '<p class="muted">Example: dev-001 / dev123 · viewer / viewer123</p>' +
+      '</section>';
     document.getElementById('login').onclick = function () {
-      api('/__admin/api/session', { method: 'POST', body: JSON.stringify({ secret: document.getElementById('secret').value, userId: document.getElementById('userId').value }) }).then(function (session) {
+      api('/__internal/api/session', {
+        method: 'POST',
+        body: JSON.stringify({
+          userId: document.getElementById('userId').value.trim(),
+          password: document.getElementById('password').value
+        })
+      }).then(function (session) {
         state.token = session.token;
-        localStorage.setItem('darionAdminToken', state.token);
+        state.user = session.user;
+        localStorage.setItem('darionInternalToken', state.token);
+        location.replace('/__internal');
         load();
       }).catch(function (error) { renderLogin(error.message); });
+    };
+    document.getElementById('password').onkeydown = function (event) {
+      if (event.key === 'Enter') document.getElementById('login').click();
     };
   }
   function load() {
     if (!state.token) return renderLogin();
     api('/__internal/api/documents').then(function (payload) {
-      state.docs = payload.documents;
+      state.docs = payload.documents || [];
+      try {
+        state.recentDocs = JSON.parse(localStorage.getItem('darionRecentDocs') || '[]');
+      } catch(e) {}
       var params = new URLSearchParams(location.search);
       state.active = params.get('doc') || '__home';
+      state.group = params.get('group') || '';
       render();
       if (state.active === '__home') renderInternalHome();
       else openDoc(state.active);
     }).catch(function () { renderLogin(); });
   }
+  if (state.token) {
+    api('/__internal/api/me').then(function (session) {
+      state.user = session.user;
+      load();
+    }).catch(function () {
+      localStorage.removeItem('darionInternalToken');
+      state.token = '';
+      renderLogin();
+    });
+  } else {
+    renderLogin();
+  }
+  function internalBreadcrumbs(trail) {
+    return '<nav class="internal-breadcrumbs" aria-label="Breadcrumb">' + trail.map(function (item, index) {
+      if (index === trail.length - 1) return '<strong id="crumb">' + escapeHtml(item.text) + '</strong>';
+      return '<a href="' + escapeHtml(item.href) + '">' + escapeHtml(item.text) + '</a><span>/</span>';
+    }).join('') + '</nav>';
+  }
+
   function render() {
+    var profileEl = document.getElementById('profileInitial');
+    if (profileEl) profileEl.textContent = (state.user && state.user.name ? state.user.name.trim().charAt(0).toUpperCase() : '?');
+    
+    var dName = document.getElementById('dropdownName');
+    var dRole = document.getElementById('dropdownRole');
+    if (dName && state.user) dName.textContent = state.user.name || 'User';
+    if (dRole && state.user) dRole.textContent = state.user.role || 'Role';
+
+    var pToggle = document.getElementById('profileDropdownToggle');
+    var pDropdown = document.getElementById('profileDropdown');
+    if (pToggle && pDropdown && !pToggle.dataset.initialized) {
+      pToggle.dataset.initialized = "true";
+      pToggle.onclick = function(e) {
+        e.stopPropagation();
+        var isVisible = pDropdown.style.display === 'block';
+        pDropdown.style.display = isVisible ? 'none' : 'block';
+        pToggle.setAttribute('aria-expanded', !isVisible);
+      };
+      document.addEventListener('click', function(e) {
+        if (!pToggle.contains(e.target)) {
+          pDropdown.style.display = 'none';
+          pToggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
     var docs = state.docs.filter(function (doc) {
       return !state.query || (doc.title + ' ' + doc.group).toLowerCase().indexOf(state.query.toLowerCase()) !== -1;
     });
-    document.getElementById('app').innerHTML = '<aside class="internal-sidebar"><div class="internal-sidebar-inner"><p class="internal-sidebar-title">My Internals</p><input id="search" class="internal-search" placeholder="Search assigned docs" value="' + escapeHtml(state.query) + '"><button data-home="1" class="' + (state.active === '__home' ? 'active' : '') + '"><span>My Internals</span><small>Assigned home</small></button>' + docs.map(function (doc) { return '<button data-doc="' + doc.slug + '" class="' + (doc.slug === state.active ? 'active' : '') + '"><span>' + escapeHtml(doc.title) + '</span><small>' + escapeHtml((doc.projectName || doc.group) + ' · ' + doc.accessLevel) + '</small></button>'; }).join('') + '</div></aside><article class="internal-doc"><nav class="internal-breadcrumbs" aria-label="Breadcrumb"><span>Internal</span><span>/</span><strong id="crumb">My Internals</strong></nav><div id="document" class="internal-document-body">Select an internal document.</div></article>';
+    var activeDoc = docs.find(function (doc) { return doc.slug === state.active; });
+    var trail = [
+      { text: 'Dashboard', href: '/__internal' },
+      { text: 'Internal', href: '/__internal' }
+    ];
+    if (state.active === '__home') {
+      trail.push({ text: 'My Internals', href: '/__internal' });
+    } else if (activeDoc) {
+      trail.push({ text: activeDoc.group || 'Documentation', href: '/__internal?group=' + encodeURIComponent(activeDoc.group || '') });
+      trail.push({ text: activeDoc.title, href: '/__internal?doc=' + encodeURIComponent(activeDoc.slug) });
+    } else {
+      trail.push({ text: 'My Internals', href: '/__internal' });
+    }
+    
+    var recentHtml = '';
+    if (state.recentDocs && state.recentDocs.length > 0) {
+      var recentDocsObjects = state.recentDocs.map(function(s) { return state.docs.find(function(d) { return d.slug === s; }); }).filter(Boolean);
+      if (recentDocsObjects.length > 0) {
+        recentHtml = '<div class="internal-sidebar-recent"><p class="internal-sidebar-subtitle">Recently Viewed</p>' + recentDocsObjects.map(function(doc) {
+          return '<a href="/__internal?doc=' + encodeURIComponent(doc.slug) + '" data-doc="' + doc.slug + '" class="' + (doc.slug === state.active ? 'active' : '') + '"><span>' + escapeHtml(doc.title) + '</span><small>' + escapeHtml((doc.projectName || doc.group)) + '</small></a>';
+        }).join('') + '</div><hr class="internal-sidebar-divider">';
+      }
+    }
+
+    document.getElementById('app').innerHTML = '<aside class="internal-sidebar"><div class="internal-sidebar-inner"><p class="internal-sidebar-title">My Internals</p><p class="muted internal-user">' + escapeHtml((state.user && state.user.name) || 'Signed in') + ' · ' + escapeHtml((state.user && state.user.role) || '') + '</p>' + recentHtml + '<input id="search" class="internal-search" placeholder="Search assigned docs" value="' + escapeHtml(state.query) + '"><a href="/__internal" data-home="1" class="' + (state.active === '__home' ? 'active' : '') + '"><span>Dashboard</span><small>Internal home</small></a>' + docs.map(function (doc) { return '<a href="/__internal?doc=' + encodeURIComponent(doc.slug) + '" data-doc="' + doc.slug + '" class="' + (doc.slug === state.active ? 'active' : '') + '"><span>' + escapeHtml(doc.title) + '</span><small>' + escapeHtml((doc.projectName || doc.group) + ' · ' + doc.accessLevel) + '</small></a>'; }).join('') + '<button data-logout="1" class="internal-signout">Sign Out</button></div></aside><article class="internal-doc">' + internalBreadcrumbs(trail) + '<div id="document" class="internal-document-body">Select an internal document.</div></article>';
     document.getElementById('search').oninput = function () { state.query = this.value; render(); };
     var homeButton = document.querySelector('[data-home]');
-    if (homeButton) homeButton.onclick = function () { renderInternalHome(); };
-    Array.prototype.forEach.call(document.querySelectorAll('[data-doc]'), function (button) { button.onclick = function () { openDoc(button.dataset.doc); }; });
+    if (homeButton) homeButton.onclick = function (e) { e.preventDefault(); renderInternalHome(); };
+    Array.prototype.forEach.call(document.querySelectorAll('[data-doc]'), function (button) { button.onclick = function (e) { e.preventDefault(); openDoc(button.dataset.doc); }; });
+    var logout = document.querySelector('[data-logout]');
+    var dropLogout = document.getElementById('dropdownSignOut');
+    var doLogout = function () {
+      localStorage.removeItem('darionInternalToken');
+      state.token = '';
+      state.user = null;
+      renderLogin();
+    };
+    if (logout) logout.onclick = doLogout;
+    if (dropLogout) dropLogout.onclick = doLogout;
   }
   function renderInternalHome() {
     state.active = '__home';
     render();
-    document.getElementById('crumb').textContent = 'My Internals';
     document.getElementById('document').innerHTML = getInternalHomeMarkup();
-    history.replaceState(null, '', '/__internal');
+    history.replaceState(null, '', '/__internal' + (state.group ? '?group=' + encodeURIComponent(state.group) : ''));
   }
   function openDoc(slug) {
     state.active = slug;
+    
+    // Manage recently viewed
+    try {
+      var recent = JSON.parse(localStorage.getItem('darionRecentDocs') || '[]');
+      recent = recent.filter(function(s) { return s !== slug; });
+      recent.unshift(slug);
+      if (recent.length > 5) recent.length = 5;
+      localStorage.setItem('darionRecentDocs', JSON.stringify(recent));
+      state.recentDocs = recent;
+    } catch(e) {}
+    
     render();
     api('/__internal/api/documents/' + slug).then(function (doc) {
-      document.getElementById('crumb').textContent = doc.title;
-      document.getElementById('document').innerHTML = renderMarkdown(doc.markdown) + '<section class="internal-responses"><h2>Responses</h2><div id="comments">Loading responses...</div><form id="commentForm" class="response-form"><textarea name="body" placeholder="Add a response for this document"></textarea><button>Send Response</button></form></section>';
+      state.toc = [];
+      var html = renderMarkdown(doc.markdown);
+      
+      var tocHtml = '';
+      if (state.toc.length > 0) {
+        tocHtml = '<aside class="internal-toc"><h4>On this page</h4><ul>' + state.toc.map(function(item) {
+          return '<li class="toc-' + item.level + '"><a href="#' + item.id + '">' + escapeHtml(item.text) + '</a></li>';
+        }).join('') + '</ul></aside>';
+      }
+
+      document.getElementById('document').innerHTML = '<div class="internal-doc-layout"><div class="internal-doc-center">' + html + '<section class="internal-responses"><h2>Responses</h2><div id="comments">Loading responses...</div><form id="commentForm" class="response-form"><textarea name="body" placeholder="Add a response for this document"></textarea><button>Send Response</button></form></section></div>' + tocHtml + '</div>';
       loadComments(slug);
       history.replaceState(null, '', '/__internal?doc=' + encodeURIComponent(slug));
     }).catch(alertError);
@@ -1620,22 +1949,53 @@ ${getPrivateCss()}
     });
   }
   function getInternalHomeMarkup() {
-    var groups = {};
-    state.docs.forEach(function (doc) {
-      if (!groups[doc.group]) groups[doc.group] = [];
-      groups[doc.group].push(doc);
-    });
-    var cards = Object.keys(groups).map(function (group) {
-      var first = groups[group][0];
-      return '<button class="internal-home-card" data-doc="' + first.slug + '"><span class="internal-home-icon"></span><strong>' + escapeHtml(group) + '</strong><span>' + groups[group].length + ' internal document' + (groups[group].length === 1 ? '' : 's') + '</span></button>';
-    }).join('');
+    var docsForHome = state.group ? state.docs.filter(function (doc) { return doc.group === state.group; }) : state.docs;
+    var cards = '';
+    var heading = 'My Documents';
+    var backButton = '';
+
+    if (state.group) {
+      heading = state.group;
+      backButton = '<a href="#" id="backToGroups" style="display:inline-block; margin-bottom:12px; color:var(--blue); text-decoration:none; font-size:14px;">&larr; Back to My Documents</a>';
+      cards = docsForHome.map(function(doc) {
+        return '<a href="/__internal?doc=' + encodeURIComponent(doc.slug) + '" class="internal-home-card" data-doc="' + doc.slug + '"><span class="internal-home-icon"></span><strong>' + escapeHtml(doc.title) + '</strong><span>' + escapeHtml(doc.status || 'Internal') + '</span></a>';
+      }).join('');
+    } else {
+      var groups = {};
+      docsForHome.forEach(function (doc) {
+        if (!groups[doc.group]) groups[doc.group] = [];
+        groups[doc.group].push(doc);
+      });
+      cards = Object.keys(groups).map(function (group) {
+        return '<a href="#" class="internal-home-card" data-group="' + escapeHtml(group) + '"><span class="internal-home-icon"></span><strong>' + escapeHtml(group) + '</strong><span>' + groups[group].length + ' internal document' + (groups[group].length === 1 ? '' : 's') + '</span></a>';
+      }).join('');
+    }
+
     var featured = state.docs.slice(0, 6).map(function (doc) {
-      return '<button class="internal-feature-link" data-doc="' + doc.slug + '"><strong>' + escapeHtml(doc.title) + '</strong><span>' + escapeHtml(doc.group) + '</span></button>';
+      return '<a href="/__internal?doc=' + encodeURIComponent(doc.slug) + '" class="internal-feature-link" data-doc="' + doc.slug + '"><strong>' + escapeHtml(doc.title) + '</strong><span>' + escapeHtml(doc.group) + '</span></a>';
     }).join('');
+
     setTimeout(function () {
       Array.prototype.forEach.call(document.querySelectorAll('.internal-home-card[data-doc], .internal-feature-link[data-doc]'), function (button) {
-        button.onclick = function () { openDoc(button.dataset.doc); };
+        button.onclick = function (e) { e.preventDefault(); openDoc(button.dataset.doc); };
       });
+      Array.prototype.forEach.call(document.querySelectorAll('.internal-home-card[data-group]'), function (button) {
+        button.onclick = function (e) { 
+          e.preventDefault(); 
+          state.group = button.dataset.group; 
+          history.pushState(null, '', '/__internal?group=' + encodeURIComponent(state.group));
+          renderInternalHome(); 
+        };
+      });
+      var backBtn = document.getElementById('backToGroups');
+      if (backBtn) {
+        backBtn.onclick = function(e) {
+          e.preventDefault();
+          state.group = '';
+          history.pushState(null, '', '/__internal');
+          renderInternalHome();
+        };
+      }
       var search = document.getElementById('internalHomeSearch');
       if (search) search.oninput = function () {
         state.query = search.value;
@@ -1644,28 +2004,176 @@ ${getPrivateCss()}
         renderInternalHome();
       };
     }, 0);
-    return '<section class="internal-home-hero"><div><p class="internal-eyebrow">Darion Technologies</p><div class="internal-home-lockup"><img src="https://raw.githubusercontent.com/Pavandarivemula1/darion-assets/main/dariontechnologies(dt).png" alt="Darion Technologies logo"><h1><span>My</span><span>Internals</span></h1></div><p>Browse the project plans, setup references, handling guides, and troubleshooting docs assigned to your profile.</p></div><input id="internalHomeSearch" class="internal-home-search" placeholder="Search assigned internal documentation" value="' + escapeHtml(state.query) + '"></section><section class="internal-home-section"><h2>Assigned Projects</h2><div class="internal-home-grid">' + cards + '</div></section><section class="internal-home-section internal-home-directory"><h2>Needs Attention</h2><div>' + featured + '</div></section>';
+    return '<section class="internal-home-hero"><div><p class="internal-eyebrow">Darion Technologies</p><div class="internal-home-lockup"><img src="https://raw.githubusercontent.com/Pavandarivemula1/darion-assets/main/dariontechnologies(dt).png" alt="Darion Technologies logo"><h1><span>My</span><span>Internals</span></h1></div><p>Browse the project plans, setup references, handling guides, and troubleshooting docs assigned to your profile.</p></div><input id="internalHomeSearch" class="internal-home-search" placeholder="Search assigned internal documentation" value="' + escapeHtml(state.query) + '"></section><section class="internal-home-section">' + backButton + '<h2>' + escapeHtml(heading) + '</h2><div class="internal-home-grid">' + cards + '</div></section><section class="internal-home-section internal-home-directory"><h2>Needs Attention</h2><div>' + featured + '</div></section>';
   }
   function renderMarkdown(markdown) {
     var body = markdown.replace(/^---\\n[\\s\\S]*?\\n---\\n?/, '');
     var inList = false;
-    function closeList() {
-      if (!inList) return '';
-      inList = false;
-      return '</ul>';
-    }
-    return body.split('\\n').map(function (line) {
-      if (line.indexOf('# ') === 0) return closeList() + '<h1>' + escapeHtml(line.slice(2)) + '</h1>';
-      if (line.indexOf('## ') === 0) return closeList() + '<h2>' + escapeHtml(line.slice(3)) + '</h2>';
-      if (line.indexOf('### ') === 0) return closeList() + '<h3>' + escapeHtml(line.slice(4)) + '</h3>';
-      if (line.indexOf('- ') === 0) {
-        var prefix = inList ? '' : '<ul>';
-        inList = true;
-        return prefix + '<li>' + escapeHtml(line.slice(2)) + '</li>';
+    var inBlockquote = false;
+    var inTable = false;
+    var tableHeadersDone = false;
+    var inCode = false;
+    var codeLang = '';
+    var codeLines = [];
+
+    function closeBlocks() {
+      var res = '';
+      if (inList) { res += '</ul>'; inList = false; }
+      if (inBlockquote) { res += '</blockquote>'; inBlockquote = false; }
+      if (inTable) { 
+        res += (tableHeadersDone ? '</tbody>' : '</thead>') + '</table></div>'; 
+        inTable = false; 
+        tableHeadersDone = false; 
       }
-      if (line.trim() === '') return closeList();
-      return closeList() + '<p>' + escapeHtml(line) + '</p>';
-    }).join('') + closeList();
+      return res;
+    }
+
+    function renderInline(raw) {
+      var s = String(raw || '');
+      var html = '';
+      var lastIndex = 0;
+
+      // Inline links: [text](url)
+      // Inline code: code
+      // Bold: **bold**
+      // Italic: *italic*
+      var re = /(\\[([^\\]]+)\\]\\(([^)]+)\\))|(\\x60([^\\x60]+)\\x60)|(\\*\\*(.+?)\\*\\*)|(\\*(.+?)\\*)/g;
+      var match;
+      while ((match = re.exec(s))) {
+        html += escapeHtml(s.slice(lastIndex, match.index));
+
+        if (match[2] !== undefined) {
+          var text = match[2];
+          var url = String(match[3] || '').trim();
+          var safeUrl = url;
+          if (!safeUrl || /^javascript:/i.test(safeUrl)) {
+            safeUrl = '#';
+          } else if (safeUrl.startsWith('http') || safeUrl.startsWith('#') || safeUrl.startsWith('/docs') || safeUrl.startsWith('/__')) {
+            // keep standard or absolute links
+          } else {
+            // rewrite relative docs links to __internal
+            var targetSlug = safeUrl.split('/').pop().replace(/\\.md(#.*)?$/, '');
+            if (targetSlug) safeUrl = '/__internal?doc=' + encodeURIComponent(targetSlug);
+          }
+          html += '<a href="' + escapeHtml(safeUrl) + '">' + escapeHtml(text) + '</a>';
+        } else if (match[5] !== undefined) {
+          html += '<code>' + escapeHtml(match[5]) + '</code>';
+        } else if (match[7] !== undefined) {
+          html += '<strong>' + escapeHtml(match[7]) + '</strong>';
+        } else if (match[9] !== undefined) {
+          html += '<em>' + escapeHtml(match[9]) + '</em>';
+        }
+
+        lastIndex = match.index + match[0].length;
+      }
+
+      html += escapeHtml(s.slice(lastIndex));
+      return html;
+    }
+
+    function openCodeBlock(lang) {
+      inCode = true;
+      codeLang = String(lang || '').trim();
+      codeLines = [];
+    }
+
+    function closeCodeBlock() {
+      inCode = false;
+      var langClass = codeLang ? ' class="language-' + escapeHtml(codeLang) + '"' : '';
+      return '<pre><code' + langClass + '>' + escapeHtml(codeLines.join('\\n')) + '</code></pre>';
+    }
+
+    var out = [];
+    var lines = body.split('\\n');
+
+    for (var i = 0; i < lines.length; i += 1) {
+      var line = lines[i];
+
+      if (line.startsWith(String.fromCharCode(96) + String.fromCharCode(96) + String.fromCharCode(96))) {
+        if (!inCode) {
+          out.push(closeBlocks());
+          openCodeBlock(line.slice(3));
+        } else {
+          out.push(closeCodeBlock());
+        }
+        continue;
+      }
+
+      if (inCode) {
+        codeLines.push(line);
+        continue;
+      }
+
+      if (line.indexOf('# ') === 0) {
+        out.push(closeBlocks() + '<h1>' + escapeHtml(line.slice(2)) + '</h1>');
+        continue;
+      }
+      if (line.indexOf('## ') === 0) {
+        var text2 = line.slice(3);
+        var id2 = text2.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        state.toc.push({ level: 2, text: text2, id: id2 });
+        out.push(closeBlocks() + '<h2 id="' + id2 + '">' + escapeHtml(text2) + '</h2>');
+        continue;
+      }
+      if (line.indexOf('### ') === 0) {
+        var text3 = line.slice(4);
+        var id3 = text3.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        state.toc.push({ level: 3, text: text3, id: id3 });
+        out.push(closeBlocks() + '<h3 id="' + id3 + '">' + escapeHtml(text3) + '</h3>');
+        continue;
+      }
+
+      if (line.indexOf('- ') === 0) {
+        var prefix = inList ? '' : closeBlocks() + '<ul>';
+        inList = true;
+        out.push(prefix + '<li>' + renderInline(line.slice(2)) + '</li>');
+        continue;
+      }
+
+      if (line.indexOf('> ') === 0) {
+        var prefix = inBlockquote ? '' : closeBlocks() + '<blockquote>';
+        inBlockquote = true;
+        out.push(prefix + '<p>' + renderInline(line.slice(2)) + '</p>');
+        continue;
+      }
+
+      if (line.trim().startsWith('|')) {
+        var isSeparator = line.indexOf('---') !== -1;
+        var prefix = '';
+        
+        if (!inTable) {
+          prefix = closeBlocks();
+          inTable = true;
+          tableHeadersDone = false;
+          out.push(prefix + '<div class="table-wrapper"><table><thead>');
+        }
+        
+        if (isSeparator) {
+          tableHeadersDone = true;
+          out.push('</thead><tbody>');
+          continue;
+        }
+
+        var cells = line.split('|').slice(1, -1);
+        var tr = '<tr>' + cells.map(function(cell) {
+          var tag = tableHeadersDone ? 'td' : 'th';
+          return '<' + tag + '>' + renderInline(cell.trim()) + '</' + tag + '>';
+        }).join('') + '</tr>';
+
+        out.push(tr);
+        continue;
+      }
+
+      if (line.trim() === '') {
+        out.push(closeBlocks());
+        continue;
+      }
+
+      out.push(closeBlocks() + '<p>' + renderInline(line) + '</p>');
+    }
+
+    if (inCode) out.push(closeCodeBlock());
+    return out.join('') + closeBlocks();
   }
   function alertError(error) { alert(error.message || String(error)); }
   function escapeHtml(value) { return String(value || '').replace(/[&<>"']/g, function (char) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]; }); }
@@ -1738,6 +2246,69 @@ a:hover, button:hover { text-decoration: underline; }
 }
 .brand { font-weight: 700; }
 .topnav { display: flex; gap: 22px; color: var(--muted); }
+.profile-icon { position: relative; display: flex; align-items: center; justify-content: flex-end; min-width: 40px; cursor: pointer; }
+.profile-icon span {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--panel);
+  transition: border-color 0.2s ease;
+}
+.profile-icon:hover span { border-color: var(--blue); }
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  z-index: 100;
+  cursor: default;
+}
+.profile-dropdown-header {
+  padding: 10px 12px;
+}
+.profile-dropdown-header strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.2;
+}
+.profile-dropdown-header small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.profile-dropdown hr {
+  margin: 6px 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.profile-dropdown button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: #ff3b30;
+  border-radius: 6px;
+  transition: background 0.1s ease;
+}
+.profile-dropdown button:hover {
+  background: color-mix(in srgb, #ff3b30 10%, transparent);
+  text-decoration: none;
+}
 .workspace {
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
@@ -1970,7 +2541,7 @@ pre {
   background: var(--bg);
   font-size: 14px;
 }
-.internal-sidebar button {
+.internal-sidebar a {
   display: grid;
   gap: 4px;
   width: 100%;
@@ -1979,29 +2550,100 @@ pre {
   padding: 9px 0 9px 12px;
   background: transparent;
   text-align: left;
+  text-decoration: none;
 }
-.internal-sidebar button span {
+.internal-sidebar a span {
   color: var(--text);
   font-size: 14px;
   font-weight: 500;
   line-height: 1.35;
 }
-.internal-sidebar button small {
+.internal-sidebar a small {
   color: var(--muted);
   font-size: 12px;
 }
-.internal-sidebar button.active {
+.internal-sidebar a.active {
   border-left-color: var(--blue);
 }
-.internal-sidebar button.active span,
-.internal-sidebar button:hover span {
+.internal-sidebar a.active span,
+.internal-sidebar a:hover span {
   color: var(--blue);
+}
+.internal-user {
+  margin: 0 0 14px;
+  font-size: 12px;
+}
+.internal-signout {
+  margin-top: 18px;
 }
 .internal-doc {
   max-width: 1180px;
   min-height: calc(100vh - 56px);
   margin-left: 296px;
-  padding: 48px 40px 96px;
+}
+.internal-doc > .internal-breadcrumbs {
+  padding: 48px 40px 0;
+  max-width: 1180px;
+  margin-bottom: 0;
+}
+.internal-document-body {
+  padding: 34px 40px 96px;
+  max-width: 100%;
+}
+.internal-doc-layout {
+  display: flex;
+  gap: 40px;
+}
+.internal-doc-center {
+  flex: 1;
+  min-width: 0;
+  max-width: 760px;
+}
+.internal-toc {
+  width: 200px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 96px;
+  align-self: flex-start;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+.internal-toc h4 {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.internal-toc ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.internal-toc li {
+  margin-bottom: 8px;
+}
+.internal-toc li.toc-3 {
+  padding-left: 12px;
+}
+.internal-toc a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+}
+.internal-toc a:hover {
+  color: var(--blue);
+}
+.internal-sidebar-subtitle {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.internal-sidebar-divider {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
 }
 .internal-breadcrumbs {
   display: flex;
@@ -2018,9 +2660,6 @@ pre {
   color: var(--muted);
   font-weight: 500;
 }
-.internal-document-body {
-  max-width: 760px;
-}
 .internal-document-body:has(.internal-home-hero) {
   max-width: 980px;
 }
@@ -2030,7 +2669,10 @@ pre {
   gap: 48px;
   align-items: end;
   border-bottom: 1px solid var(--border);
-  padding: 34px 0 44px;
+  padding: 44px 34px;
+  margin: -48px -40px 44px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--blue) 8%, transparent), transparent 60%);
+  border-radius: 0 0 24px 24px;
 }
 .internal-eyebrow {
   margin: 0 0 10px;
@@ -2054,8 +2696,12 @@ pre {
   margin: 0;
   color: var(--text);
   font-size: clamp(52px, 6vw, 72px);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.04;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text) 30%, var(--blue));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 .internal-home-lockup h1 span {
   display: block;
@@ -2088,23 +2734,37 @@ pre {
 }
 .internal-home-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  border: 1px solid var(--border);
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
 }
 .internal-home-card {
+  position: relative;
   min-height: 190px;
-  border: 0;
-  border-right: 1px solid var(--border);
-  padding: 24px 20px;
-  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 24px;
+  background: color-mix(in srgb, var(--panel) 40%, transparent);
+  backdrop-filter: blur(10px);
   text-align: left;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  overflow: hidden;
 }
-.internal-home-card:last-child {
-  border-right: 0;
+.internal-home-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: linear-gradient(135deg, transparent, color-mix(in srgb, var(--blue) 5%, transparent));
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 .internal-home-card:hover {
-  background: var(--panel);
+  border-color: color-mix(in srgb, var(--blue) 40%, transparent);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--blue) 8%, transparent);
   text-decoration: none;
+}
+.internal-home-card:hover::before {
+  opacity: 1;
 }
 .internal-home-icon {
   display: block;
@@ -2152,7 +2812,7 @@ pre {
   font-size: 14px;
 }
 .internal-document-body h1 {
-  margin: 0 0 22px;
+  margin: 0 0 32px;
   color: var(--text);
   font-size: 48px;
   font-weight: 700;
@@ -2167,22 +2827,87 @@ pre {
   font-size: 28px;
   font-weight: 650;
   line-height: 1.2;
+  letter-spacing: 0;
 }
 .internal-document-body h3 {
   margin: 32px 0 12px;
   color: var(--text);
   font-size: 21px;
   font-weight: 650;
+  letter-spacing: 0;
 }
 .internal-document-body p,
 .internal-document-body li {
-  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+  color: var(--text);
   font-size: 17px;
   line-height: 1.65;
+  margin: 16px 0;
 }
 .internal-document-body ul {
-  margin: 14px 0 0;
+  margin: 14px 0;
   padding-left: 22px;
+}
+.internal-document-body blockquote {
+  margin: 16px 0;
+  border-left: 3px solid var(--blue);
+  padding-left: 16px;
+  color: color-mix(in srgb, var(--text) 78%, var(--muted));
+}
+.internal-document-body blockquote p {
+  margin: 0;
+}
+.internal-document-body a {
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.internal-document-body .table-wrapper {
+  overflow-x: auto;
+  margin: 16px 0;
+}
+.internal-document-body table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  font-size: 14px;
+  overflow: hidden;
+}
+.internal-document-body tr {
+  border-top: 1px solid var(--divider);
+}
+.internal-document-body tr:nth-child(2n) {
+  background: transparent;
+}
+.internal-document-body th {
+  background: color-mix(in srgb, var(--bg) 95%, var(--text));
+  color: var(--text);
+  font-weight: 650;
+}
+.internal-document-body th, .internal-document-body td {
+  border: 0;
+  border-right: 1px solid var(--divider);
+  padding: 12px 14px;
+  text-align: left;
+}
+.internal-document-body th:last-child, .internal-document-body td:last-child {
+  border-right: 0;
+}
+.internal-document-body pre {
+  margin: 16px 0;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 18px 20px;
+}
+.internal-document-body code:not(pre code) {
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 0.88em;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 .internal-responses {
   max-width: 760px;
