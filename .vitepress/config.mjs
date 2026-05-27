@@ -18,7 +18,7 @@ export default defineConfig({
     lineNumbers: true
   },
   vite: {
-    plugins: isDevelopment ? [writerApiPlugin()] : []
+    plugins: [writerApiPlugin()]
   },
   themeConfig: {
     logo: null,

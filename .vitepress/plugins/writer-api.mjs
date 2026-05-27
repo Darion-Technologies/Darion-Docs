@@ -11,43 +11,48 @@ const roleRank = { intern: 1, viewer: 2, commenter: 3, developer: 4, editor: 4, 
 const accessRank = { none: 0, read: 1, comment: 2, edit: 3, owner: 4 }
 
 export function writerApiPlugin() {
+  const configureMiddleware = (server) => async (request, response, next) => {
+    try {
+      const url = new URL(request.url || '/', 'http://darion.local')
+
+      if (url.pathname === '/__writer') {
+        redirect(response, '/__admin')
+        return
+      }
+
+      if (url.pathname === '/__admin') {
+        sendHtml(response, getAdminHtml())
+        return
+      }
+
+      if (url.pathname === '/__internal') {
+        sendHtml(response, getInternalHtml())
+        return
+      }
+
+      if (url.pathname.startsWith('/__admin/api/')) {
+        await handleAdminApi(server, request, response, url)
+        return
+      }
+
+      if (url.pathname.startsWith('/__internal/api/')) {
+        await handleInternalApi(server, request, response, url)
+        return
+      }
+
+      next()
+    } catch (error) {
+      sendJson(response, 500, { error: error.message || 'Private docs service failed.' })
+    }
+  }
+
   return {
     name: 'darion-private-docs-api',
     configureServer(server) {
-      server.middlewares.use(async (request, response, next) => {
-        try {
-          const url = new URL(request.url || '/', 'http://darion.local')
-
-          if (url.pathname === '/__writer') {
-            redirect(response, '/__admin')
-            return
-          }
-
-          if (url.pathname === '/__admin') {
-            sendHtml(response, getAdminHtml())
-            return
-          }
-
-          if (url.pathname === '/__internal') {
-            sendHtml(response, getInternalHtml())
-            return
-          }
-
-          if (url.pathname.startsWith('/__admin/api/')) {
-            await handleAdminApi(server, request, response, url)
-            return
-          }
-
-          if (url.pathname.startsWith('/__internal/api/')) {
-            await handleInternalApi(server, request, response, url)
-            return
-          }
-
-          next()
-        } catch (error) {
-          sendJson(response, 500, { error: error.message || 'Private docs service failed.' })
-        }
-      })
+      server.middlewares.use(configureMiddleware(server))
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use(configureMiddleware(server))
     }
   }
 }
@@ -251,7 +256,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     const body = await readJsonBody(request)
     const saved = await saveDocument(server, scope, body)
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 201, saved)
     return
   }
@@ -260,7 +265,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     const body = await readJsonBody(request)
     const saved = await saveDocument(server, scope, { ...body, slug })
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 200, saved)
     return
   }
@@ -268,7 +273,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
   if (method === 'DELETE' && slug) {
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     await deleteDocument(server, scope, slug)
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 200, { message: 'Document deleted.' })
     return
   }
@@ -276,7 +281,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
   if (method === 'POST' && slug && action === 'archive') {
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     await archiveDocument(server, scope, slug, session.user.id)
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 200, { message: 'Document archived.' })
     return
   }
@@ -284,7 +289,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
   if (method === 'POST' && slug && action === 'restore') {
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     await restoreDocument(server, scope, slug)
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 200, { message: 'Document restored.' })
     return
   }
@@ -292,7 +297,7 @@ async function handleDocumentApi(server, request, response, parts, method, sessi
   if (method === 'POST' && slug && action === 'duplicate') {
     if (!hasRole(session, 'editor')) return sendJson(response, 403, { error: 'Editor access is required.' })
     const duplicated = await duplicateDocument(server, scope, slug)
-    server.ws.send({ type: 'full-reload' })
+    server.ws?.send({ type: 'full-reload' })
     sendJson(response, 201, duplicated)
     return
   }
